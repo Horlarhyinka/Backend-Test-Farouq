@@ -13,11 +13,8 @@ class UserManager(BaseUserManager):
         """Create_user method creates and saves new user objects."""
         if not email:
             raise ValueError('User must have valid email address')
-
-        print(f"user ssword before set:{user.password}")
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
-        print(f"user ssword after set:{user.password}")
         user.save(using=self._db)
 
         return user

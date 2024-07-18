@@ -24,7 +24,6 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
     def post(self, request, *args, **kwargs):
         data = {"email": request.data.get("email"), "password": request.data.get("password")}
-        print(data)
         if not data["email"] or not data["password"]:
             return Response({"message": "email and password is required", status: status.HTTP_401_UNAUTHORIZED}, status=status.HTTP_401_UNAUTHORIZED)
         try:
