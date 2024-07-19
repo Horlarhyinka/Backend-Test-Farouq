@@ -35,7 +35,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-
     objects = UserManager()
-
     USERNAME_FIELD = 'email'
+
+class Category(models.Model):
+
+    name = models.CharField(max_length=255, null=False, unique=True)
+    cover = models.URLField(null=True)
+    def __str__(self)->str:
+        return f"{self.name}"
+
+class Product(models.Model):
+
+    name = models.CharField(max_length=255, null=False)
+    price = models.FloatField(null=False)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    def __str__(self)->str:
+        return f"{self.name}"
+    

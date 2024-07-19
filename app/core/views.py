@@ -1,12 +1,16 @@
 from rest_framework import generics
-from .models import User, UserManager
-from .serializers import UserSerializer
+from .models import User, Product, Category
+from .serializers import UserSerializer, CategorySerializer, ProductSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from datetime import datetime
+from .permissions import IsStaff
+import logging
+
+logging = logging.getLogger(__name__)
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -24,6 +28,8 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
     def post(self, request, *args, **kwargs):
         data = {"email": request.data.get("email"), "password": request.data.get("password")}
+        if request.data.get("is_staff"):
+            data["is_staff"] = True
         if not data["email"] or not data["password"]:
             return Response({"message": "email and password is required", status: status.HTTP_401_UNAUTHORIZED}, status=status.HTTP_401_UNAUTHORIZED)
         try:
@@ -43,4 +49,59 @@ class LoginView(APIView):
         except Exception as err:
             print(f"error occured: {err}")
             return Response({"message": "internal server error", "details": err}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CategoryListView(generics.ListCreateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            self.permission_classes = [permissions.IsAuthenticated]
+        elif self.request.method == 'POST':
+            self.permission_classes = [permissions.IsAuthenticated, IsStaff]
+        return super().get_permissions()
+    
+
+
+class GetCategoryView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    lookup_field="pk"
+    def get_permissions(self):
+        if self.request.method == "GET":
+            self.permission_classes = [permissions.IsAuthenticated]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated, IsStaff]
+        return super().get_permissions()
+    
+
+class ListProductView(generics.ListCreateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            self.permission_classes = [permissions.IsAuthenticated]
+        elif self.request.method == 'POST':
+            self.permission_classes = [permissions.IsAuthenticated, IsStaff]
+        return super().get_permissions()
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            print(f"Server error: {e}")
+            return Response({"detail": "Server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
+
+class GetProductView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field="pk"
+    def get_permissions(self):
+        if self.request.method == "GET":
+            self.permission_classes = [permissions.IsAuthenticated]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated, IsStaff]
+        return super().get_permissions()
+
+
