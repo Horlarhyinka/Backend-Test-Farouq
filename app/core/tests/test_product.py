@@ -1,42 +1,26 @@
-# from django.urls import reverse
-# from rest_framework import status
-# from rest_framework.test import APITestCase
-# from core.models import User, Category, Product
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+from core.models import User, Category, Product
 
-# class ProductTests(APITestCase):
+class ProductTests(APITestCase):
 
-#     def setUp(self):
-#         self.user = User.objects.create_user(email='user@example.com', password='password123')
-#         self.staff_user = User.objects.create_user(email='staff@example.com', password='password123', is_staff=True)
-#         self.category = Category.objects.create(name='TestCategory')
-#         self.product = Product.objects.create(name='Product1', price=10.00, category=self.category)
-    
-#     def authenticate_user(self):
-#         url = reverse('login')
-#         data = {
-#             'email': 'user@example.com',
-#             'password': 'password123'
-#         }
-#         response = self.client.post(url, data, format='json')
-#         self.token = response.data['token']
-#         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.token)
+    def setUp(self):
+        self.client.post(reverse('register'), {"email": 'user@example.com', "password": 'password123', "name": "test", "is_active": True})
+        self.client.post(reverse('register'), {"email": 'staff@example.com', "password": 'password123', "name": "test", "is_staff": True, "is_active": True})
+        auth_res = self.client.post(reverse('login'), {"email": 'user@example.com', "password": 'password123'})
+        self.user_token = auth_res.data["token"]["access"]
+        auth_res = self.client.post(reverse('login'), {"email": 'staff@example.com', "password": 'password123'})
+        self.staff_token = auth_res.data["token"]["access"]
+        self.category = Category.objects.create(name='TestCategory')
+        self.product = Product.objects.create(name='Product1', price=10.00, category=self.category)
 
-#     def authenticate_staff_user(self):
-#         url = reverse('login')
-#         data = {
-#             'email': 'staff@example.com',
-#             'password': 'password123'
-#         }
-#         response = self.client.post(url, data, format='json')
-#         self.token = response.data['token']
-#         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.token)
-
-#     def test_list_products(self):
-#         self.authenticate_user()
-#         url = reverse('products')
-#         response = self.client.get(url, format='json')
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         self.assertEqual(len(response.data), 1)
+    def test_list_products(self):
+        url = reverse('products')
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer "+self.user_token)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
 
 #     def test_create_product(self):
 #         self.authenticate_staff_user()
