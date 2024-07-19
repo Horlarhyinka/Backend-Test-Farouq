@@ -38,6 +38,5 @@ class UserTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.user_token)
         url = reverse('user')
         response = self.client.get(url)
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['email'], 'user@example.com')

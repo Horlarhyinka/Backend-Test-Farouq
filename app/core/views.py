@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from datetime import datetime
 from .permissions import IsStaff
 import logging
-from django.db.models import Q
+from django.utils import timezone
 
 logging = logging.getLogger(__name__)
 
@@ -44,8 +44,7 @@ class LoginView(APIView):
             refresh = RefreshToken.for_user(user)
             access = refresh.access_token
             serialized = UserSerializer(user)
-            user.last_login = datetime.now()
-            User.objects.filter(email=data["email"]).update(last_login=datetime.now())
+            User.objects.filter(email=data["email"]).update(last_login=timezone.now())
             return Response({"user":serialized.data, "token": { "access": str(access), "refresh": str(refresh)}}, status=status.HTTP_200_OK)
         except Exception as err:
             print(f"error occured: {err}")

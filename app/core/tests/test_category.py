@@ -18,7 +18,6 @@ class CategoryTests(APITestCase):
         url = reverse('categories')
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.user_token)
         response = self.client.get(url, format='json')
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
