@@ -100,11 +100,12 @@ class GetProductView(generics.RetrieveUpdateDestroyAPIView):
     
 
     def update(self, request, *args, **kwargs):
-        try:
-            return super().update(request, *args, **kwargs)
-        except Exception as e:
-            print(f"Server error: {e}")
-            return Response({"detail": "Server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        partial = kwargs.pop('partial', True)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
 
 class BaseOrderView:

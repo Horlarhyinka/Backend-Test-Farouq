@@ -28,11 +28,16 @@ class ProductSerializer(serializers.ModelSerializer):
         return product
 
     def update(self, instance, validated_data):
-        category_id = validated_data.pop('category')['id']
-        category = Category.objects.get(id=category_id)
-        instance.name = validated_data.get('name', instance.name)
-        instance.price = validated_data.get('price', instance.price)
-        instance.category = category
+        if "category" in validated_data:
+            cat = validated_data.pop('category')
+            if cat and cat["id"]:
+                category_id = cat['id']
+                category = Category.objects.get(id=category_id)
+                instance.category = category   
+        if instance.name:
+            instance.name = validated_data.get('name', instance.name)
+        if instance.price:
+            instance.price = validated_data.get('price', instance.price)
         instance.save()
         return instance
 
