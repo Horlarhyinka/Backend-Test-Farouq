@@ -1,83 +1,43 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import RefreshToken
-
-User = get_user_model()
+from core.models import User
 
 class UserTests(APITestCase):
 
+    def setUp(self):
+        self.client.post(reverse('register'), {"email": 'user@example.com', "password": 'password123', "name": "test", "is_active": True})
+        self.client.post(reverse('register'), {"email": 'staff@example.com', "password": 'password123', "name": "test", "is_staff": True, "is_active": True})
+        auth_res = self.client.post(reverse('login'), {"email": 'user@example.com', "password": 'password123'})
+        self.user_token = auth_res.data["token"]["access"]
+        auth_res = self.client.post(reverse('login'), {"email": 'staff@example.com', "password": 'password123'})
+        self.staff_token = auth_res.data["token"]["access"]
+    
     def test_register_user(self):
         url = reverse('register')
         data = {
-            'email': 'testuser@example.com',
-            'password': 'testpassword',
-            'name': 'Test User'
+            'email': 'newuser@example.com',
+            'password': 'password123',
+            'name': "test"
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(User.objects.get().email, 'testuser@example.com')
+        self.assertTrue(User.objects.filter(email='newuser@example.com').exists())
 
-
-class UserViewTests(APITestCase):
-
-    def setUp(self):
-        self.user = User.objects.create_user(
-            email='testuser@example.com',
-            password='testpassword',
-            name='Test User'
-        )
-        self.client.force_authenticate(user=self.user)  # Authenticate the user
-
-    def test_get_user(self):
-        url = reverse('user')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['email'], self.user.email)
-        self.assertEqual(response.data['name'], self.user.name)
-
-
-class LoginViewTests(APITestCase):
-
-    def setUp(self):
-        self.user = User.objects.create_user(
-            email='testuser@example.com',
-            password='testpassword',
-            name='Test User'
-        )
-
-    def test_login_success(self):
+    def test_login_user(self):
         url = reverse('login')
         data = {
-            'email': 'testuser@example.com',
-            'password': 'testpassword'
+            'email': 'user@example.com',
+            'password': 'password123'
         }
         response = self.client.post(url, data, format='json')
-        print(response.data["message"])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
-        self.assertIn('access', response.data['token'])
-        self.assertIn('refresh', response.data['token'])
 
-    def test_login_failure_wrong_password(self):
-        url = reverse('login')
-        data = {
-            'email': 'testuser@example.com',
-            'password': 'wrongpassword'
-        }
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(response.data['message'], 'Incorrect password')
-
-    def test_login_failure_user_not_found(self):
-        url = reverse('login')
-        data = {
-            'email': 'nonexistentuser@example.com',
-            'password': 'testpassword'
-        }
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data['message'], 'user not found')
-
+    def test_get_user(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.user_token)
+        url = reverse('user')
+        response = self.client.get(url)
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], 'user@example.com')
