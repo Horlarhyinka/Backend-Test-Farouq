@@ -1,6 +1,6 @@
 from rest_framework import generics
-from .models import User, Product, Category
-from .serializers import UserSerializer, CategorySerializer, ProductSerializer
+from .models import User, Product, Category, OrderItem, Order
+from .serializers import UserSerializer, CategorySerializer, ProductSerializer, OrderItemSerializer, OrderSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from datetime import datetime
 from .permissions import IsStaff
 import logging
+from django.db.models import Q
 
 logging = logging.getLogger(__name__)
 
@@ -84,12 +85,6 @@ class ListProductView(generics.ListCreateAPIView):
         elif self.request.method == 'POST':
             self.permission_classes = [permissions.IsAuthenticated, IsStaff]
         return super().get_permissions()
-    def create(self, request, *args, **kwargs):
-        try:
-            return super().create(request, *args, **kwargs)
-        except Exception as e:
-            print(f"Server error: {e}")
-            return Response({"detail": "Server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         
 
@@ -103,5 +98,34 @@ class GetProductView(generics.RetrieveUpdateDestroyAPIView):
         else:
             self.permission_classes = [permissions.IsAuthenticated, IsStaff]
         return super().get_permissions()
+    
+
+    def update(self, request, *args, **kwargs):
+        try:
+            return super().update(request, *args, **kwargs)
+        except Exception as e:
+            print(f"Server error: {e}")
+            return Response({"detail": "Server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class BaseOrderView:
+    """
+    A base view to provide common queryset logic for Order views.
+    """
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Order.objects.all()
+        else:
+            return Order.objects.filter(user=self.request.user)
+
+
+class OrderListCreateView(BaseOrderView, generics.ListCreateAPIView):
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class OrderDetailView(BaseOrderView, generics.RetrieveUpdateDestroyAPIView):
+    lookup_field="pk"
